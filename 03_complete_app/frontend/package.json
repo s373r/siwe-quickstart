@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "webpack serve"
+    "start": "webpack serve --port 9090"
   },
   "dependencies": {
     "siwe": "^3.0.0",

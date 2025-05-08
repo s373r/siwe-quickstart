@@ -1,9 +1,8 @@
 import { BrowserProvider } from 'ethers';
 import { SiweMessage } from 'siwe';
 
-const scheme = window.location.protocol.slice(0, -1);
 const domain = window.location.host;
-const origin = window.location.origin;
+const origin = "http://localhost:4200/v/login";
 const provider = new BrowserProvider(window.ethereum);
 
 const BACKEND_ADDR = "http://localhost:3000";
@@ -11,15 +10,21 @@ async function createSiweMessage(address, statement) {
     const res = await fetch(`${BACKEND_ADDR}/nonce`, {
         credentials: 'include',
     });
+
+    const now = new Date();
+    const minutes_15_in_seconds = 15 * 60 * 1000;
     const message = new SiweMessage({
-        scheme,
+        // NOTE: for some reason, the "scheme" field breaks a parsing on the backend side.
+        // scheme,
         domain,
         address,
         statement,
         uri: origin,
         version: '1',
-        chainId: '1',
-        nonce: await res.text()
+        chainId: (await provider.getNetwork()).chainId,
+        nonce: await res.text(),
+        issuedAt: now.toISOString(),
+        expirationTime: new Date(now.getTime() + minutes_15_in_seconds).toISOString(),
     });
     return message.prepareMessage();
 }
@@ -34,9 +39,25 @@ async function signInWithEthereum() {
 
     const message = await createSiweMessage(
         await signer.getAddress(),
-        'Sign in with Ethereum to the app.'
+      'By signing, you are proving you own this wallet and logging in. This does not initiate a transaction or cost any fees.'
     );
     const signature = await signer.signMessage(message);
+
+    console.log(`message:\n${message}\n`);
+
+    console.log('GQL request body (for copy&paste):');
+    console.log(`
+mutation {
+  auth {
+    login(
+      loginMethod: "web3-wallet"
+      loginCredentialsJson: ${JSON.stringify(JSON.stringify({ message, signature }))}
+    ) {
+      accessToken
+    }
+  }
+}
+    `);
 
     const res = await fetch(`${BACKEND_ADDR}/verify`, {
         method: "POST",
