@@ -39,7 +39,7 @@ async function signInWithEthereum() {
 
     const message = await createSiweMessage(
         await signer.getAddress(),
-      'By signing, you are proving you own this wallet and logging in. This does not initiate a transaction or cost any fees.'
+      'By signing, you confirm wallet ownership and log in. No transaction or fees are involved.'
     );
     const signature = await signer.signMessage(message);
 
