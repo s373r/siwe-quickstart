@@ -4,11 +4,19 @@ import Session from 'express-session';
 import { generateNonce, SiweMessage } from 'siwe';
 
 const app = express();
+const whitelist = ['http://127.0.0.1:9090', 'http://localhost:9090']
+
 app.use(express.json());
 app.use(cors({
-    origin: 'http://127.0.0.1:9090',
+    origin: (origin, callback) => {
+        if (whitelist.includes(origin)) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
     credentials: true,
-}))
+}));
 
 app.use(Session({
     name: 'siwe-quickstart',
